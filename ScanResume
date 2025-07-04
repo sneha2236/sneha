@@ -1,0 +1,38 @@
+import os
+from sentence_transformers import SentenceTransformer, util
+
+# Load Sentence-BERT model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Load job description
+with open('job_description.txt', 'r') as f:
+    job_desc = f.read()
+
+# Read resumes from the 'resumes/' folder
+resume_folder = 'resumes'
+resumes = []
+filenames = []
+
+for filename in os.listdir(resume_folder):
+    if filename.endswith('.txt'):
+        with open(os.path.join(resume_folder, filename), 'r') as f:
+            resumes.append(f.read())
+            filenames.append(filename)
+
+# Create embeddings
+texts = [job_desc] + resumes
+embeddings = model.encode(texts, convert_to_tensor=True)
+
+# Compute cosine similarity
+jd_embedding = embeddings[0]
+resume_embeddings = embeddings[1:]
+similarities = util.cos_sim(jd_embedding, resume_embeddings)[0]
+
+# Rank resumes
+ranked = sorted(zip(filenames, resumes, similarities), key=lambda x: x[2], reverse=True)
+
+# Output
+print("\n📄 Resume Ranking Based on Job Description:\n")
+for i, (fname, resume, score) in enumerate(ranked, 1):
+    print(f"{i}. {fname} → Score: {score:.2f}")
+    print("   Snippet:", resume[:120].replace('\n', ' '), "...\n")
