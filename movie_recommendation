@@ -1,0 +1,57 @@
+import csv
+
+# Load movie data from CSV
+def load_movies(filename):
+    movies = []
+    with open(filename, 'r', encoding='utf-8') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            genres = row['genres'].split('|')
+            movies.append({'title': row['title'], 'genres': genres})
+    return movies
+
+# Recommend similar movies based on genre overlap
+def recommend_movies(input_title, movies, top_n=5):
+    input_movie = None
+    for movie in movies:
+        if movie['title'].lower() == input_title.lower():
+            input_movie = movie
+            break
+
+    if not input_movie:
+        return ["❌ Movie not found. Please enter the exact title from the list."]
+
+    input_genres = set(input_movie['genres'])
+
+    scored_movies = []
+    for movie in movies:
+        if movie['title'] == input_title:
+            continue
+        overlap = input_genres.intersection(set(movie['genres']))
+        score = len(overlap)
+        if score > 0:
+            scored_movies.append((movie['title'], score))
+
+    scored_movies.sort(key=lambda x: x[1], reverse=True)
+    recommendations = [title for title, _ in scored_movies[:top_n]]
+
+    return recommendations if recommendations else ["😕 No similar movies found."]
+
+# Terminal interface
+def main():
+    print("🎬 Welcome to Simple Movie Recommender!")
+    movies = load_movies("movies.csv")
+
+    while True:
+        title = input("\nEnter a movie title (or 'exit' to quit): ").strip()
+        if title.lower() == 'exit':
+            print("👋 Goodbye!")
+            break
+
+        recommendations = recommend_movies(title, movies)
+        print("\n🎯 Recommendations:")
+        for i, movie in enumerate(recommendations, 1):
+            print(f"{i}. {movie}")
+
+if __name__ == "__main__":
+    main()
